@@ -1,0 +1,6 @@
+[apic:vars]
+username=admin
+password=Cxlabs!13579
+
+[apic]
+10.122.189.163

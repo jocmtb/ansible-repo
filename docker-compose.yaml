@@ -1,0 +1,25 @@
+version: "3"
+services:
+  container_ansible:
+    build:
+      context: ./
+      dockerfile: ./ansible_proy/Dockerfile
+    image: ubuntu:20.04
+    container_name: container_ansible
+    hostname: container_ansible
+    networks:
+      - ansible-network
+    ports:
+      - 8019:8019
+    volumes:
+      - ./ansible_proy/ansible_examples:/root/ansible_examples
+    restart: unless-stopped
+    privileged: true
+networks:
+  ansible-network:
+    driver: bridge
+    name: ansible-network
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.179.0/24
