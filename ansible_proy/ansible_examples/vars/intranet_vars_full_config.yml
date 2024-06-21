@@ -1,9 +1,9 @@
 ---
-tenant: JOC
+tenant: Joc
 vrf: "prod_vrf"
 bridge_domains:
   - bd: "prod_bd"
-    gateway: "10.1.100.1"
+    gateway: "10.100.100.1"
     mask: "24"
     scope: "public"
 ap: "intranet"

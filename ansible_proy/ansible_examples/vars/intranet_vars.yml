@@ -1,5 +1,5 @@
 ---
-  tenant: JOC
+  tenant: Rose
   ap: "intranet"
   epgs:
     - epg: "web"
