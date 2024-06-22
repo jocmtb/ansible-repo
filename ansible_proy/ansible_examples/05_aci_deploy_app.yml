@@ -54,6 +54,7 @@
         mask: "{{ item.mask }}"
         scope: "{{ item.scope }}"
       with_items: "{{ bridge_domains }}"
+      tags: bd
 
     - name: TASK 05 - ENSURE TENANT FILTERS EXIST
       aci_filter:

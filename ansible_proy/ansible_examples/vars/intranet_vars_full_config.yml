@@ -6,6 +6,10 @@ bridge_domains:
     gateway: "10.100.100.1"
     mask: "24"
     scope: "public"
+  - bd: "web_bd"
+    gateway: "10.200.200.1"
+    mask: "24"
+    scope: "public"
 ap: "intranet"
 epgs:
   - epg: "web"
