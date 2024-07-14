@@ -65,6 +65,22 @@
           import_profile: test1
           export_profile: test2
 
+    - name: Add a new External Subnet
+      cisco.aci.aci_l3out_extsubnet:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        l3out: "prod_l3out"
+        extepg: "prod_extepg"
+        description: External Subnet for Production ExtEpg
+        network: 200.123.20.0/24
+        scope: 
+         - export-rtctrl
+         - import-security
+
     - name: Add a new node profile
       cisco.aci.aci_l3out_logical_node_profile:
         host: "{{ ansible_host }}"
