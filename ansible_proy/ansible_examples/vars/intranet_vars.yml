@@ -1,5 +1,5 @@
 ---
-  tenant: Rose
+  tenant: "Rose"
   ap: "intranet"
   epgs:
     - epg: "web"

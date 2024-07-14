@@ -17,7 +17,7 @@
         state: "present"
         validate_certs: False
         tenant: "{{ tenant }}"
-        vrf: "{{ vrf }}"
+        vrf: "{{ vrf | default('prod_vrf') }}"
         description: "VRF Created Using Ansible"
 
     - name: ENSURE TENANT BRIDGE DOMAIN EXISTS
@@ -29,7 +29,7 @@
         validate_certs: False
         tenant: "{{ tenant }}"
         bd: "{{ bd | default('prod_bd') }}"
-        vrf: "{{ vrf }}"
+        vrf: "{{ vrf | default('prod_vrf') }}"
         description: "BD Created Using Ansible"
 
     - name: ENSURE BRIDGE DOMAIN SUBNET EXISTS
@@ -41,6 +41,19 @@
         validate_certs: False
         tenant: "{{ tenant }}"
         bd: "{{ bd | default('prod_bd') }}"
-        gateway: "10.10.10.1"
+        gateway: "10.1.1.1"
+        scope: "public"
         mask: 24
         description: "Subnet Created Using Ansible"
+        
+    - name: Bind Bridge Domain to L3 Out
+      cisco.aci.aci_bd_to_l3out:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        bd: "prod_bd"
+        l3out: "prod_l3out"
+        

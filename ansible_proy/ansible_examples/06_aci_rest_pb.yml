@@ -3,6 +3,10 @@
   hosts: apic
   connection: local
   gather_facts: False
+  vars_prompt:
+    - name: "tenant"
+      prompt: "What would you like to name your Tenant?"
+      private: no
 
   tasks:
     - name: ENSURE TENANT HAS L3 EXTERNAL NETWORK
@@ -12,5 +16,5 @@
         password: "{{ password }}"
         validate_certs: False
         method: "post"
-        path: "api/mo/uni/tn-Rose_ansible/out-corp_l3.json"
+        path: "api/mo/uni/tn-{{ tenant }}/out-corp_l3.json"
         content: '{"l3extOut": {"attributes": {"descr":"Created Using Ansible", "name":"corp_l3"}}}'

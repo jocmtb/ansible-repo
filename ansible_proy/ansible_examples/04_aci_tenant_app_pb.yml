@@ -60,3 +60,34 @@
         contract: "{{ item.contract }}"
         contract_type: "{{ item.contract_type }}"
       with_items: "{{ epg_contracts }}"
+
+    - name: Deploy Static Path binding for given EPG
+      cisco.aci.aci_static_binding_to_epg:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap }}"
+        epg: "web"
+        encap_id: 101
+        deploy_immediacy: "immediate"
+        interface_mode: "trunk"
+        interface_type: switch_port
+        pod_id: 1
+        leafs: 101
+        interface: '1/2'
+
+    - name: Add a new physical domain to EPG binding
+      cisco.aci.aci_epg_to_domain:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap }}"
+        epg: "web"
+        domain: "PHY_DOM_LAB"
+        domain_type: phys
