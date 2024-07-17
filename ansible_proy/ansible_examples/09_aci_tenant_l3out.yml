@@ -11,8 +11,13 @@
       prompt: "What would you like to name your VRF?"
       private: no
 
+  vars:
+    ext_epg_subnets:
+    - 200.123.10.0/24
+    - 200.123.20.0/24
+
   tasks:
-    - name: ENSURE APPLICATIONS TENANT EXISTS
+    - name: TASK 0A - Ensure Tenant exist
       aci_tenant:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -23,7 +28,7 @@
         name_alias: "ansible_test_tenant"
         description: "Tenant Created Using Ansible by jcostavi"
 
-    - name: ENSURE TENANT VRF EXISTS
+    - name: TASK 0B - Ensure VRF exist
       aci_vrf:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -34,7 +39,7 @@
         vrf: "{{ vrf }}"
         description: "VRF Created Using Ansible"
 
-    - name: Add a new L3Out
+    - name: TASK 1A - Add a new L3Out
       aci_l3out:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -48,7 +53,7 @@
         vrf: "{{ vrf }}"
         l3protocol: bgp
 
-    - name: Add a new External-Epg
+    - name: TASK 2A - Add a new External-Epg
       aci_l3out_extepg:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -65,7 +70,7 @@
           import_profile: test1
           export_profile: test2
 
-    - name: Add a new External Subnet
+    - name: TASK 2B - Add a new External Subnet
       cisco.aci.aci_l3out_extsubnet:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -76,12 +81,26 @@
         l3out: "prod_l3out"
         extepg: "prod_extepg"
         description: External Subnet for Production ExtEpg
-        network: 200.123.20.0/24
+        network: "{{ item }}"
         scope: 
          - export-rtctrl
          - import-security
+      with_items: "{{ ext_epg_subnets }}"
 
-    - name: Add a new node profile
+    - name: TASK 2C - Bind a contract to an external EPG
+      cisco.aci.aci_l3out_extepg_to_contract:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: present
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        l3out: "prod_l3out"
+        extepg : "prod_extepg"
+        contract: "default"
+        contract_type: provider
+
+    - name: TASK 3A - Add a new node profile
       cisco.aci.aci_l3out_logical_node_profile:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -95,7 +114,7 @@
         dscp: CS0
         
 
-    - name: Add a new node to a node profile
+    - name: TASK 3B - Add a new node to a node profile
       cisco.aci.aci_l3out_logical_node:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -110,7 +129,7 @@
         router_id: 10.101.101.101
         loopback_address: 10.101.101.101
 
-    - name: Add a new interface profile
+    - name: TASK 4A -Add a new interface profile
       cisco.aci.aci_l3out_logical_interface_profile:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -122,7 +141,7 @@
         node_profile: my_node_profile
         interface_profile: "my_interface_profile"
 
-    - name: Add a new SVI physical port
+    - name: TASK 4B - Add a new SVI physical port
       cisco.aci.aci_l3out_interface:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -141,7 +160,7 @@
         encap: vlan-501
         mode: regular
 
-    - name: Add BGP Peer to the Node Profile level
+    - name: TASK 5A -Add BGP Peer to the Node Profile level
       cisco.aci.aci_l3out_bgp_peer:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -167,7 +186,7 @@
             direction: "export"
             l3out: "anstest_l3out"
 
-    - name: Create static routes
+    - name: TASK 5B -Create static routes
       cisco.aci.aci_l3out_static_routes:
         host: "{{ ansible_host }}"
         username: "{{ username }}"
@@ -182,7 +201,7 @@
         prefix: 10.10.5.5/32
         description: "Route to IP from Peer BGP Loopback"
 
-    - name: Add a new nexthop to a prefix
+    - name: TASK 5C -Add a new nexthop to a prefix
       cisco.aci.aci_l3out_static_routes_nexthop:
         host: "{{ ansible_host }}"
         username: "{{ username }}"

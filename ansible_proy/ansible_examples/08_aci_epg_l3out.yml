@@ -1,0 +1,175 @@
+---
+- name: Configure Tenant and EPG
+  hosts: apic
+  connection: local
+  gather_facts: False
+  vars_prompt:
+    - name: "tenant"
+      prompt: "What is the name of the Tenant you want to configure ?"
+      private: no
+
+  vars:
+    list_bds:
+      - bd_name: "prod_bd"
+        subnet: "10.1.1.1"
+        mask: 24
+        scope: "public"
+        vrf: "prod_vrf"
+      - bd_name: "control_bd"
+        subnet: "10.2.2.1"
+        mask: 24
+        scope: "public"
+        vrf: "prod_vrf"
+      - bd_name: "sac_bd"
+        subnet: "10.3.3.1"
+        mask: 24
+        scope: "public"
+        vrf: "prod_vrf"
+    app_epgs:
+      - epg: "web"
+        bridge_dom: "prod_bd"
+        contract: "default"
+        encap_vlan: 101
+      - epg: "app_control"
+        bridge_dom: "control_bd"
+        contract: "default"
+        encap_vlan: 102
+      - epg: "app_sac"
+        bridge_dom: "sac_bd"
+        contract: "default"
+        encap_vlan: 103
+
+  tasks:
+    - name: Task 1 - Ensure Applications Tenant exists
+      aci_tenant:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        name_alias: "ansible_test_tenant"
+        description: "Tenant Created Using Ansible by jcostavi"
+    
+    - name: Task 2 - Ensure Tenant VRF exists
+      aci_vrf:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        vrf: "{{ vrf | default('prod_vrf') }}"
+        description: "VRF Created Using Ansible"
+
+    - name: Task 3A - ENSURE TENANT BRIDGE DOMAIN EXISTS
+      aci_bd:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        bd: "{{ item.bd_name }}"
+        vrf: "{{ item.vrf }}"
+        description: "BD Created Using Ansible"
+      with_items: "{{ list_bds }}"
+
+    - name: Task 3B - ENSURE BRIDGE DOMAIN SUBNET EXISTS
+      aci_bd_subnet:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        bd: "{{ item.bd_name }}"
+        gateway: "{{ item.subnet }}"
+        scope: "{{ item.scope }}"
+        mask: "{{ item.mask }}"
+        description: "Subnet Created Using Ansible"
+      with_items: "{{ list_bds }}"
+        
+    - name: Task 3C - Bind Bridge Domain to L3 Out
+      cisco.aci.aci_bd_to_l3out:
+        host: "{{ ansible_host }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        bd: "{{ item.bd_name }}"
+        l3out: "prod_l3out"
+      with_items: "{{ list_bds }}"
+
+    - name: Task 4 - Ensure Application Profile exists
+      aci_ap:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap | default('prod_ap') }}"
+        descr: "App Profile Created Using Ansible"
+
+    - name: Task 5A - Ensure App EPGs exists
+      aci_epg:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap | default('prod_ap') }}"
+        epg: "{{ item.epg }}"
+        bd: "{{ item.bridge_dom }}"
+        description: "EPG Created Using Ansible"
+      with_items: "{{ app_epgs }}"
+
+    - name: Task 5B -Deploy Static Path binding for given EPG
+      cisco.aci.aci_static_binding_to_epg:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap | default('prod_ap') }}"
+        epg: "{{ item.epg }}"
+        encap_id: "{{ item.encap_vlan }}"
+        deploy_immediacy: "immediate"
+        interface_mode: "trunk"
+        interface_type: switch_port
+        pod_id: 1
+        leafs: 101
+        interface: '1/2'
+      with_items: "{{ app_epgs }}"
+
+    - name: Task 5C - Add a new physical domain to EPG binding
+      cisco.aci.aci_epg_to_domain:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap | default('prod_ap') }}"
+        epg: "{{ item.epg }}"
+        domain: "PHY_DOM_LAB"
+        domain_type: phys
+      with_items: "{{ app_epgs }}"
+
+    - name: Task 5D - Ensure EPG is associated to contract
+      aci_epg_to_contract:
+        host: "{{ inventory_hostname }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        state: "present"
+        validate_certs: False
+        tenant: "{{ tenant }}"
+        ap: "{{ ap | default('prod_ap') }}"
+        epg: "{{ item.epg }}"
+        contract: "{{ item.contract }}"
+        contract_type: "consumer"
+      with_items: "{{ app_epgs }}"
