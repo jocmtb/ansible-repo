@@ -15,6 +15,28 @@
     ext_epg_subnets:
     - 200.123.10.0/24
     - 200.123.20.0/24
+    l3out:
+      name: "prod_l3out"
+      domain: "L3_DOM_LAB"
+      l3protocol: "bgp"
+      extepg_name: "prod_extepg"
+      contract: "default"
+      contract_type: "provider"
+      node_profile_name: my_node_profile
+      interface_profile_name: "my_interface_profile"
+      pod: 1
+      node: 101
+      path_ep: "eth1/2"
+      interface_type: "ext-svi"
+      address: "192.168.10.1/24"
+      encap: "vlan-501"
+      mode: "regular"
+      bgp_peer: 10.10.5.5
+      bgp_remote: 65120
+      bgp_loopback: 10.101.101.101
+      ttl: 4
+      prefix: "10.10.5.5/32"
+      nexthop: 192.168.10.2
 
   tasks:
     - name: TASK 0A - Ensure Tenant exist
@@ -47,11 +69,11 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        name: "prod_l3out"
+        name: "{{ l3out.name }}"
         description: "L3Out for Production tenant"
-        domain: "L3_DOM_LAB"
+        domain: "{{ l3out.domain }}"
         vrf: "{{ vrf }}"
-        l3protocol: bgp
+        l3protocol: "{{ l3out.l3protocol }}"
 
     - name: TASK 2A - Add a new External-Epg
       aci_l3out_extepg:
@@ -61,8 +83,8 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        name: "prod_extepg"
+        l3out: "{{ l3out.name }}"
+        name: "{{ l3out.extepg_name }}"
         description: "ExtEpg for Production L3Out"
         contract_exception_tag: test
         qos_class: level6
@@ -78,9 +100,9 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        extepg: "prod_extepg"
-        description: External Subnet for Production ExtEpg
+        l3out: "{{ l3out.name }}"
+        extepg: "{{ l3out.extepg_name }}"
+        description: "External Subnet for Production ExtEpg"
         network: "{{ item }}"
         scope: 
          - export-rtctrl
@@ -95,10 +117,10 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        extepg : "prod_extepg"
-        contract: "default"
-        contract_type: provider
+        l3out: "{{ l3out.name }}"
+        extepg : "{{ l3out.extepg_name }}"
+        contract: "{{ l3out.contract }}"
+        contract_type: "{{ l3out.contract_type }}"
 
     - name: TASK 3A - Add a new node profile
       cisco.aci.aci_l3out_logical_node_profile:
@@ -108,9 +130,9 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        node_profile: "my_node_profile"
-        description: node profile for my_l3out
+        l3out: "{{ l3out.name }}"
+        node_profile: "{{ l3out.node_profile_name }}"
+        description: "node profile for my_l3out"
         dscp: CS0
         
 
@@ -122,12 +144,12 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        node_profile: my_node_profile
-        pod_id: 1
-        node_id: 101
-        router_id: 10.101.101.101
-        loopback_address: 10.101.101.101
+        l3out: "{{ l3out.name }}"
+        node_profile: "{{ l3out.node_profile_name }}"
+        pod_id: "{{ l3out.pod }}"
+        node_id: "{{ l3out.node }}"
+        router_id: "{{ l3out.bgp_loopback }}"
+        loopback_address: "{{ l3out.bgp_loopback }}"
 
     - name: TASK 4A -Add a new interface profile
       cisco.aci.aci_l3out_logical_interface_profile:
@@ -137,9 +159,9 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        node_profile: my_node_profile
-        interface_profile: "my_interface_profile"
+        l3out: "{{ l3out.name }}"
+        node_profile: "{{ l3out.node_profile_name }}"
+        interface_profile: "{{ l3out.interface_profile_name }}"
 
     - name: TASK 4B - Add a new SVI physical port
       cisco.aci.aci_l3out_interface:
@@ -149,16 +171,16 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        node_profile: my_node_profile
-        interface_profile: my_interface_profile
-        pod_id: 1
-        node_id: 101
-        path_ep: eth1/2
-        interface_type: ext-svi
-        address: 192.168.10.1/24
-        encap: vlan-501
-        mode: regular
+        l3out: "{{ l3out.name }}"
+        node_profile: "{{ l3out.node_profile_name }}"
+        interface_profile: "{{ l3out.interface_profile_name }}"
+        pod_id: "{{ l3out.pod }}"
+        node_id: "{{ l3out.node }}"
+        path_ep: "{{ l3out.path_ep }}"
+        interface_type: "{{ l3out.interface_type }}"
+        address: "{{ l3out.address }}"
+        encap: "{{ l3out.encap }}"
+        mode: "{{ l3out.mode }}"
 
     - name: TASK 5A -Add BGP Peer to the Node Profile level
       cisco.aci.aci_l3out_bgp_peer:
@@ -168,11 +190,11 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        node_profile: my_node_profile
-        peer_ip: 10.10.5.5
-        remote_asn: 65120
-        ttl: 4
+        l3out: "{{ l3out.name }}"
+        node_profile: "{{ l3out.node_profile_name }}"
+        peer_ip: "{{ l3out.bgp_peer }}"
+        remote_asn: "{{ l3out.bgp_remote }}"
+        ttl: "{{ l3out.ttl }}"
         bgp_controls:
           - nh-self
           - send-com
@@ -194,11 +216,11 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        logical_node: my_node_profile
-        pod_id: 1
-        node_id: 101
-        prefix: 10.10.5.5/32
+        l3out: "{{ l3out.name }}"
+        logical_node: "{{ l3out.node_profile_name }}"
+        pod_id: "{{ l3out.pod }}"
+        node_id: "{{ l3out.node }}"
+        prefix: "{{ l3out.prefix }}"
         description: "Route to IP from Peer BGP Loopback"
 
     - name: TASK 5C -Add a new nexthop to a prefix
@@ -209,12 +231,12 @@
         state: present
         validate_certs: False
         tenant: "{{ tenant }}"
-        l3out: "prod_l3out"
-        node_profile: my_node_profile
-        pod_id: 1
-        node_id: 101
-        prefix: 10.10.5.5/32
-        nexthop: 192.168.10.2
+        l3out: "{{ l3out.name }}"
+        node_profile: "{{ l3out.node_profile_name }}"
+        pod_id: "{{ l3out.pod }}"
+        node_id: "{{ l3out.node }}"
+        prefix: "{{ l3out.prefix }}"
+        nexthop: "{{ l3out.nexthop }}"
         
         
         
